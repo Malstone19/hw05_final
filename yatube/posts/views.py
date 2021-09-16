@@ -4,7 +4,7 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import CommentForm, PostForm
-from .models import Comment, Follow, Group, Post, User
+from .models import Follow, Group, Post, User
 
 
 def index(request):
@@ -18,7 +18,7 @@ def index(request):
     return render(request, 'posts/index.html', context)
 
 
-def group_posts(request, slug):
+def group_show(request, slug):
     group = get_object_or_404(Group, slug=slug)
     posts = group.posts.order_by('-pub_date')
     paginator = Paginator(posts, settings.COUNT_PAGES)
@@ -37,7 +37,6 @@ def profile(request, username):
     paginator = Paginator(post_list, settings.COUNT_PAGES)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    post_amount = post_list.count()
     if request.user.is_authenticated:
         following = Follow.objects.filter(
             user=request.user,
@@ -48,7 +47,6 @@ def profile(request, username):
     context = {
         'page_obj': page_obj,
         'author': user,
-        'post_amount': post_amount,
         'following': following,
     }
     return render(request, 'posts/profile.html', context)
@@ -56,14 +54,10 @@ def profile(request, username):
 
 def post_detail(request, post_id):
     user_post = get_object_or_404(Post, id=post_id)
-    form = CommentForm(request.POST or None)
-    comments = Comment.objects.filter(post_id=post_id)
-    post_amount = user_post.author.posts.all().count()
-    text = user_post.text[0:30]
+    form = CommentForm()
+    comments = user_post.comments.all()
     context = {
         'post': user_post,
-        'post_amount': post_amount,
-        'text': text,
         'form': form,
         'comments': comments
     }
@@ -74,12 +68,11 @@ def post_detail(request, post_id):
 def post_create(request):
     groups = Group.objects.all()
     form = PostForm(request.POST or None, files=request.FILES or None)
-    if request.method == 'POST':
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.save()
-            return redirect('posts:profile', username=request.user.username)
+    if form.is_valid():
+        post = form.save(commit=False)
+        post.author = request.user
+        post.save()
+        return redirect('posts:profile', username=request.user.username)
     context = {
         'form': form,
         'groups': groups,
@@ -90,24 +83,27 @@ def post_create(request):
 
 @login_required
 def post_edit(request, post_id):
+    # # не совсем понял замечания тут, кнопка же редактирования
+    # проверяется в шаблоне post_edit, а тут проверка на то залогинен
+    # ли пользователь
     post = get_object_or_404(Post, id=post_id)
-    user = request.user
     form = PostForm(
         request.POST or None,
         files=request.FILES or None,
         instance=post
     )
-    if request.method == "POST":
-        if form.is_valid():
-            form.save()
-            return redirect('posts:post_detail', post_id=post_id)
+    if form.is_valid():
+        form.save()
+        return redirect('posts:post_detail', post_id=post_id)
     groups = Group.objects.all()
+    # в create_post.html делаю вот так
+    # <option value={{ group.id }}>{{ group.title }}</option>,
+    # чтобы вывести варианты групп при выборе к какой группе относить
     context = {
         'form': form,
         'groups': groups,
         'is_edit': True,
         'post': post,
-        'user': user
     }
     return render(request, 'posts/create_post.html', context)
 
@@ -138,7 +134,8 @@ def follow_index(request):
 
 @login_required
 def profile_follow(request, username):
-    if username != request.user.username:
+    exist = User.objects.filter(username=username).exists()
+    if username != request.user.username and exist:
         followed_author = get_object_or_404(User, username=username)
         Follow.objects.get_or_create(user=request.user, author=followed_author)
 

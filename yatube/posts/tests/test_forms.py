@@ -7,7 +7,6 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from ..forms import PostForm
 from ..models import Comment, Group, Post
 
 User = get_user_model()
@@ -17,7 +16,7 @@ TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
-class TaskCreateFormTests(TestCase):
+class PostCreateFormTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -25,21 +24,20 @@ class TaskCreateFormTests(TestCase):
         cls.group = Group.objects.create(
             title='Тестовая',
             slug='test')
-        cls.post = Post.objects.create(
-            text='Привет, как дела?',
-            author=TaskCreateFormTests.user,
-            group=TaskCreateFormTests.group
-        )
-        cls.form = PostForm()
-        Post.objects.create(
-            text='Привет, как дела?',
-            author=TaskCreateFormTests.user,
-        )
-        cls.comment = Comment.objects.create(
-            post=TaskCreateFormTests.post,
-            author=TaskCreateFormTests.user,
-            text='блабла'
-        )
+        # # cls.post = Post.objects.create(
+        # #     text='Привет, как дела?',
+        # #     author=PostCreateFormTests.user,
+        # #     group=PostCreateFormTests.group
+        # )
+        # Post.objects.create(
+        #     text='Привет, как дела?',
+        #     author=PostCreateFormTests.user,
+        # )
+        # cls.comment = Comment.objects.create(
+        #     post=PostCreateFormTests.post,
+        #     author=PostCreateFormTests.user,
+        #     text='блабла'
+        # )
 
     @classmethod
     def tearDownClass(cls):
@@ -50,6 +48,16 @@ class TaskCreateFormTests(TestCase):
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+
+    def checkbox_for_edit_and_create(self, latest_post, form_data, image_name):
+        check_list = {
+            latest_post.text: form_data['text'],
+            latest_post.group.id: form_data['group'],
+            latest_post.image: f'posts/{image_name}',
+        }
+        for value, expected in check_list.items():
+            with self.subTest(expected):
+                self.assertEqual(value, expected)
 
     def test_create_post(self):
         posts_count = Post.objects.count()
@@ -80,17 +88,15 @@ class TaskCreateFormTests(TestCase):
         self.assertRedirects(response, reverse('posts:profile',
                              kwargs={'username': self.user.username}),)
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertTrue(
-            Post.objects.filter(
-                text=form_data['text'],
-                author=self.user,
-                group=self.group.id,
-                image=f'posts/{image_name}'
-            ).exists()
-        )
+        latest_post = Post.objects.last()
+        self.checkbox_for_edit_and_create(latest_post, form_data, image_name)
 
     def test_edit_post(self):
-        post_id = f'{TaskCreateFormTests.post.id}'
+        post = Post.objects.create(
+            text='Привет, как дела?',
+            author=PostCreateFormTests.user,
+        )
+        post_id = f'{post.id}'
         post_count = Post.objects.count()
         image_name = 'big.gif'
         big_gif = (
@@ -120,34 +126,40 @@ class TaskCreateFormTests(TestCase):
         self.assertRedirects(response, reverse('posts:post_detail',
                              kwargs={'post_id': post_id}),)
         self.assertEqual(Post.objects.count(), post_count)
-        self.assertTrue(
-            Post.objects.filter(
-                text=form_data['text'],
-                author=self.user,
-                group=self.group.id,
-                image=f'posts/{image_name}'
-            ).exists()
-        )
+        latest_post = Post.objects.last()
+        self.checkbox_for_edit_and_create(latest_post, form_data, image_name)
 
     def test_authorized_user_comment(self):
+        post = Post.objects.create(
+            text='Привет, как дела?',
+            author=PostCreateFormTests.user,
+        )
+        post_id = f'{post.id}'
         comment_count = Comment.objects.count()
         form_data = {
             'text': 'блабла'
         }
         self.authorized_client.post(
-            reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
+            reverse('posts:add_comment', kwargs={'post_id': post_id}),
             data=form_data,
             follow=True
         )
+        latest_comment = Comment.objects.last()
         self.assertEqual(Comment.objects.count(), comment_count + 1)
+        self.assertEqual(latest_comment.text, form_data['text'])
 
     def test_unauthorized_user_comment(self):
+        post = Post.objects.create(
+            text='Привет, как дела?',
+            author=PostCreateFormTests.user,
+        )
+        post_id = f'{post.id}'
         comment_count = Comment.objects.count()
         form_data = {
             'text': 'блабла'
         }
         self.guest_client.post(
-            reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
+            reverse('posts:add_comment', kwargs={'post_id': post_id}),
             data=form_data,
             follow=True
         )

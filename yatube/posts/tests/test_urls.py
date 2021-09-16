@@ -1,6 +1,7 @@
 from http import HTTPStatus
 
 from django.contrib.auth import get_user_model
+from django.shortcuts import reverse
 from django.test import Client, TestCase
 
 from ..models import Group, Post
@@ -31,8 +32,9 @@ class PostURLTests(TestCase):
 
     def test_post_create_and_edit(self):
         context = {
-            '/create/': HTTPStatus.OK,
-            f'/posts/{PostURLTests.post.id}/edit/': HTTPStatus.OK
+            reverse('posts:post_create'): HTTPStatus.OK,
+            reverse('posts:post_edit',
+                    args={PostURLTests.post.id}): HTTPStatus.OK
         }
         for url, status_code in context.items():
             with self.subTest(url=url):
@@ -42,13 +44,19 @@ class PostURLTests(TestCase):
     def test_urls_guest_client(self):
         """Проверка доступа для неавторизованного пользователя."""
         status_code_for_urls = {
-            '/': HTTPStatus.OK,
-            f'/group/{PostURLTests.group.slug}/': HTTPStatus.OK,
-            f'/profile/{PostURLTests.post.author}/': HTTPStatus.OK,
-            '/create/': HTTPStatus.FOUND,
-            f'/posts/{PostURLTests.post.id}/': HTTPStatus.OK,
-            f'/posts/{PostURLTests.post.id}/edit/': HTTPStatus.FOUND,
+            reverse('posts:main_page'): HTTPStatus.OK,
+            reverse('posts:posts_list',
+                    args={PostURLTests.group.slug}): HTTPStatus.OK,
+            reverse('posts:profile',
+                    args={PostURLTests.post.author}): HTTPStatus.OK,
+            reverse('posts:post_create'): HTTPStatus.FOUND,
+            reverse('posts:post_detail',
+                    args={PostURLTests.post.id}): HTTPStatus.OK,
+            reverse('posts:post_edit',
+                    args={PostURLTests.post.id}): HTTPStatus.FOUND,
             '/unexisting_page/': HTTPStatus.NOT_FOUND,
+            reverse('about:author'): HTTPStatus.OK,
+            reverse('about:tech'): HTTPStatus.OK,
         }
         for url, status_code in status_code_for_urls.items():
             with self.subTest(url=url):
@@ -58,12 +66,18 @@ class PostURLTests(TestCase):
     def test_templates(self):
         """Проверка доступа к шаблонам."""
         context_of_templates = {
-            '/': 'posts/index.html',
-            f'/group/{PostURLTests.group.slug}/': 'posts/group_list.html',
-            f'/profile/{PostURLTests.post.author}/': 'posts/profile.html',
-            '/create/': 'posts/create_post.html',
-            f'/posts/{PostURLTests.post.id}/': 'posts/post_detail.html',
-            f'/posts/{PostURLTests.post.id}/edit/': 'posts/create_post.html',
+            reverse('posts:main_page'): 'posts/index.html',
+            reverse('posts:posts_list',
+                    args={PostURLTests.group.slug}): 'posts/group_list.html',
+            reverse('posts:profile',
+                    args={PostURLTests.post.author}): 'posts/profile.html',
+            reverse('posts:post_create'): 'posts/create_post.html',
+            reverse('posts:post_detail',
+                    args={PostURLTests.post.id}): 'posts/post_detail.html',
+            reverse('posts:post_edit',
+                    args={PostURLTests.post.id}): 'posts/create_post.html',
+            reverse('about:author'): 'about/author.html',
+            reverse('about:tech'): 'about/tech.html',
         }
         for adress, template in context_of_templates.items():
             with self.subTest(adress=adress):
