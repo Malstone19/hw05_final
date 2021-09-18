@@ -18,13 +18,13 @@ class PostModelTest(TestCase):
         )
         cls.post = Post.objects.create(
             author=cls.user,
-            text='Тестовый текст',
+            text='Текст точно больше 15 символов',
         )
 
     def test_models_have_correct_object_post(self):
         """Проверяем, что у моделей post корректно работает __str__."""
         post = PostModelTest.post
-        expected_text = post.text
+        expected_text = post.text[:15]
         self.assertEqual(expected_text, str(post))
 
 

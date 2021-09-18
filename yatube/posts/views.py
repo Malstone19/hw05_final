@@ -52,7 +52,7 @@ def profile(request, username):
     return render(request, 'posts/profile.html', context)
 
 
-def post_detail(request, post_id):
+def post_detail(request, username, post_id):
     user_post = get_object_or_404(Post, id=post_id)
     form = CommentForm()
     comments = user_post.comments.all()
@@ -66,7 +66,6 @@ def post_detail(request, post_id):
 
 @login_required
 def post_create(request):
-    groups = Group.objects.all()
     form = PostForm(request.POST or None, files=request.FILES or None)
     if form.is_valid():
         post = form.save(commit=False)
@@ -75,18 +74,17 @@ def post_create(request):
         return redirect('posts:profile', username=request.user.username)
     context = {
         'form': form,
-        'groups': groups,
         'is_edit': False
     }
     return render(request, 'posts/create_post.html', context)
 
 
 @login_required
-def post_edit(request, post_id):
-    # # не совсем понял замечания тут, кнопка же редактирования
-    # проверяется в шаблоне post_edit, а тут проверка на то залогинен
-    # ли пользователь
+def post_edit(request, username, post_id):
     post = get_object_or_404(Post, id=post_id)
+    if username != request.user.username:
+        return redirect('posts:post_detail', username=username,
+                        post_id=post)
     form = PostForm(
         request.POST or None,
         files=request.FILES or None,
@@ -94,14 +92,10 @@ def post_edit(request, post_id):
     )
     if form.is_valid():
         form.save()
-        return redirect('posts:post_detail', post_id=post_id)
-    groups = Group.objects.all()
-    # в create_post.html делаю вот так
-    # <option value={{ group.id }}>{{ group.title }}</option>,
-    # чтобы вывести варианты групп при выборе к какой группе относить
+        return redirect('posts:post_detail', username=username,
+                        post_id=post.id)
     context = {
         'form': form,
-        'groups': groups,
         'is_edit': True,
         'post': post,
     }
@@ -109,7 +103,7 @@ def post_edit(request, post_id):
 
 
 @login_required
-def add_comment(request, post_id):
+def add_comment(request, username, post_id):
     post = post = get_object_or_404(Post, id=post_id)
     form = CommentForm(request.POST or None)
     if form.is_valid():
@@ -117,7 +111,7 @@ def add_comment(request, post_id):
         comment.author = request.user
         comment.post = post
         comment.save()
-    return redirect('posts:post_detail', post_id=post_id)
+    return redirect('posts:post_detail', username=username, post_id=post.id)
 
 
 @login_required
@@ -134,8 +128,7 @@ def follow_index(request):
 
 @login_required
 def profile_follow(request, username):
-    exist = User.objects.filter(username=username).exists()
-    if username != request.user.username and exist:
+    if username != request.user.username:
         followed_author = get_object_or_404(User, username=username)
         Follow.objects.get_or_create(user=request.user, author=followed_author)
 

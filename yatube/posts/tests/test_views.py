@@ -33,7 +33,7 @@ class PostsViewsTests(TestCase):
             b'\x02\x00\x01\x00\x00\x02\x02\x0C'
             b'\x0A\x00\x3B'
         )
-        cls.image = SimpleUploadedFile(
+        uploaded = SimpleUploadedFile(
             name='small.gif',
             content=small_gif,
             content_type='image/gif'
@@ -47,7 +47,7 @@ class PostsViewsTests(TestCase):
             text='Привет, как дела?',
             author=PostsViewsTests.author,
             group=PostsViewsTests.group,
-            image=PostsViewsTests.image
+            image=uploaded
         )
         cls.comment = Comment.objects.create(
             post=PostsViewsTests.post,
@@ -75,11 +75,13 @@ class PostsViewsTests(TestCase):
             reverse('posts:posts_list',
                     kwargs={'slug': slug_test}): 'posts/group_list.html',
             reverse('posts:post_detail',
-                    kwargs={'post_id': id}): 'posts/post_detail.html',
+                    kwargs={'post_id': id, 'username': author_test}):
+                        'posts/post_detail.html',
             reverse('posts:profile',
                     kwargs={'username': author_test}): 'posts/profile.html',
             reverse('posts:post_edit',
-                    kwargs={'post_id': id}): 'posts/create_post.html',
+                    kwargs={'post_id': id, 'username': author_test}):
+                        'posts/create_post.html',
             reverse('posts:post_create'): 'posts/create_post.html',
         }
         for reverse_name, template in templates_pages_names.items():
@@ -92,10 +94,10 @@ class PostsViewsTests(TestCase):
         post_author_0 = first_test_post_object.author
         post_group_0 = first_test_post_object.group
         post_image_0 = first_test_post_object.image
-        self.assertEqual(post_image_0, f'posts/{PostsViewsTests.image}')
-        self.assertEqual(post_text_0, PostsViewsTests.post.text)
-        self.assertEqual(post_author_0, PostsViewsTests.author)
-        self.assertEqual(post_group_0, PostsViewsTests.group)
+        self.assertEqual(post_image_0, self.post.image)
+        self.assertEqual(post_text_0, self.post.text)
+        self.assertEqual(post_author_0, self.post.author)
+        self.assertEqual(post_group_0, self.post.group)
 
     def test_index_context(self):
         response = self.authorized_client.get(reverse('posts:main_page'))
@@ -107,7 +109,6 @@ class PostsViewsTests(TestCase):
             text='куку',
             author=PostsViewsTests.author,
             group=PostsViewsTests.group,
-            image=PostsViewsTests.image
         )
         response_1 = self.authorized_client.get(reverse('posts:main_page'))
         new_post.delete()
@@ -120,8 +121,7 @@ class PostsViewsTests(TestCase):
     def test_following_yes(self):
         follow_count_begin = Follow.objects.count()
         follow = Follow.objects.filter(user=PostsViewsTests.author,
-                                       author=PostsViewsTests.following_author,
-                                       )
+                                       author=PostsViewsTests.following_author)
         self.assertEqual(follow.first(), None)
         response = (self.authorized_client.
                     get(reverse('posts:profile_follow',
@@ -135,18 +135,38 @@ class PostsViewsTests(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
     def test_following_no(self):
+        follow_count = Follow.objects.all().count()
+        self.assertEqual(Follow.objects.count(), follow_count)
+        follow = Follow.objects.filter(user=PostsViewsTests.author,
+                                       author=PostsViewsTests.following_author)
+        self.assertEqual(follow.first(), None)
+
+    def test_post_detail(self):
+        id = PostsViewsTests.post.id
+        username = PostsViewsTests.post.author
+        comment_test = PostsViewsTests.comment
+        response = (self.authorized_client.
+                    get(reverse('posts:post_detail', kwargs={'post_id': id,
+                        'username': username})))
+        first_object = response.context['post']
+        self.defaul_post_tests(first_object)
+        self.assertEqual(response.context['comments'][0], comment_test)
+
+    def test_follow_auth_index(self):
         Follow.objects.create(
             user=PostsViewsTests.author,
-            author=PostsViewsTests.following_author,
+            author=PostsViewsTests.following_author
         )
-        unfollow_count_begin = Follow.objects.count()
-        self.authorized_client.get(reverse('posts:profile_unfollow',
-                                   kwargs={'username': PostsViewsTests.
-                                           following_author.username}))
-        unfollow_count_after = Follow.objects.count()
-        self.assertNotEqual(unfollow_count_begin, unfollow_count_after)
+        post = Post.objects.create(
+            text='к',
+            author=PostsViewsTests.following_author,
+            group=PostsViewsTests.group,
+        )
+        response = (self.authorized_client.get(reverse('posts:follow_index')))
+        first_object = response.context['page_obj'][0]
+        self.assertEqual(first_object, post)
 
-    def test_follow_index(self):
+    def test_follow_not_auth_index(self):
         not_followed_user = User.objects.create_user(username='user')
         self.not_followed_client = Client()
         self.not_followed_client.force_login(not_followed_user)
@@ -154,18 +174,14 @@ class PostsViewsTests(TestCase):
             user=PostsViewsTests.author,
             author=PostsViewsTests.following_author
         )
-        Post.objects.create(
+        post = Post.objects.create(
             text='к',
             author=PostsViewsTests.following_author,
             group=PostsViewsTests.group,
-            image=PostsViewsTests.image
         )
-        response_follow_after_post = (self.authorized_client.
-                                      get(reverse('posts:follow_index')))
-        response_unfollow_after_post = (self.not_followed_client.
-                                        get(reverse('posts:follow_index')))
-        self.assertNotEqual(response_follow_after_post.content,
-                            response_unfollow_after_post.content)
+        response = (self.not_followed_client.
+                    get(reverse('posts:follow_index')))
+        self.assertNotEqual(response.context, post)
 
     def test_group_list_context(self):
         slug_test = PostsViewsTests.group.slug
@@ -185,24 +201,12 @@ class PostsViewsTests(TestCase):
         self.defaul_post_tests(first_object)
         self.assertEqual(response.context['author'], author_test)
 
-    def test_post_detail(self):
-        id = PostsViewsTests.post.id
-        author_test = PostsViewsTests.author
-        comment_test = PostsViewsTests.comment
-        response = (self.authorized_client.
-                    get(reverse('posts:post_detail', kwargs={'post_id': id})))
-        first_object = response.context['post']
-        post_image_0 = first_object.image
-        # не совсем понимаю, что за обобщенный метод
-        self.assertEqual(post_image_0, f'posts/{PostsViewsTests.image}')
-        self.assertEqual(response.context['post'].author, author_test)
-        self.assertEqual(response.context['comments'][0], comment_test)
-
     def test_post_edit(self):
         id = PostsViewsTests.post.id
+        username = PostsViewsTests.post.author
         response = (self.authorized_client.
                     get(reverse('posts:post_edit',
-                        kwargs={'post_id': id})))
+                        kwargs={'post_id': id, 'username': username})))
         form_fields = {
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField,
@@ -252,18 +256,21 @@ class PaginatorViewsTest(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(PaginatorViewsTest.author)
 
-    def test_paginator_ten_pages(self):
-        for adress, reverse_name in self.templates_pages_names.items():
-            with self.subTest(adress=adress):
-                response = self.client.get(reverse_name)
+    def test_paginator(self):
+        list_of_urls = [reverse('posts:main_page'),
+                        reverse('posts:posts_list',
+                                kwargs={'slug':
+                                        PaginatorViewsTest.group.slug}),
+                        reverse('posts:profile',
+                                kwargs={'username':
+                                        PaginatorViewsTest.post.author})]
+        for url in list_of_urls:
+            with self.subTest(url=url):
+                response_10 = self.client.get(url)
+                response_3 = self.client.get(url + '?page=2')
                 self.assertEqual(len(
-                    response.context['page_obj']), 10
+                    response_10.context['page_obj']), 10
                 )
-
-    def test_paginator_other_pages(self):
-        for adress, reverse_name in self.templates_pages_names.items():
-            with self.subTest(adress=adress):
-                response = self.client.get(reverse_name + '?page=2')
                 self.assertEqual(len(
-                    response.context['page_obj']), 3
+                    response_3.context['page_obj']), 3
                 )

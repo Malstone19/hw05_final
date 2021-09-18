@@ -26,15 +26,20 @@ class PostURLTests(TestCase):
 
     def setUp(self):
         self.guest_client = Client()
-        self.user = User.objects.create_user(username='HasNoName')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
     def test_post_create_and_edit(self):
+        post = Post.objects.create(
+            text='Привет, как дела?',
+            author=PostURLTests.user,
+        )
         context = {
             reverse('posts:post_create'): HTTPStatus.OK,
             reverse('posts:post_edit',
-                    args={PostURLTests.post.id}): HTTPStatus.OK
+                    kwargs={'post_id': post.id,
+                            'username': post.author}):
+                                HTTPStatus.OK
         }
         for url, status_code in context.items():
             with self.subTest(url=url):
@@ -51,12 +56,14 @@ class PostURLTests(TestCase):
                     args={PostURLTests.post.author}): HTTPStatus.OK,
             reverse('posts:post_create'): HTTPStatus.FOUND,
             reverse('posts:post_detail',
-                    args={PostURLTests.post.id}): HTTPStatus.OK,
+                    kwargs={'post_id': PostURLTests.post.id,
+                            'username': PostURLTests.post.author}):
+                                HTTPStatus.OK,
             reverse('posts:post_edit',
-                    args={PostURLTests.post.id}): HTTPStatus.FOUND,
+                    kwargs={'post_id': PostURLTests.post.id,
+                            'username': PostURLTests.post.author}):
+                                HTTPStatus.FOUND,
             '/unexisting_page/': HTTPStatus.NOT_FOUND,
-            reverse('about:author'): HTTPStatus.OK,
-            reverse('about:tech'): HTTPStatus.OK,
         }
         for url, status_code in status_code_for_urls.items():
             with self.subTest(url=url):
@@ -73,11 +80,13 @@ class PostURLTests(TestCase):
                     args={PostURLTests.post.author}): 'posts/profile.html',
             reverse('posts:post_create'): 'posts/create_post.html',
             reverse('posts:post_detail',
-                    args={PostURLTests.post.id}): 'posts/post_detail.html',
+                    kwargs={'post_id': PostURLTests.post.id, 'username':
+                            PostURLTests.post.author}):
+                                'posts/post_detail.html',
             reverse('posts:post_edit',
-                    args={PostURLTests.post.id}): 'posts/create_post.html',
-            reverse('about:author'): 'about/author.html',
-            reverse('about:tech'): 'about/tech.html',
+                    kwargs={'post_id': PostURLTests.post.id, 'username':
+                            PostURLTests.post.author}):
+                                'posts/create_post.html',
         }
         for adress, template in context_of_templates.items():
             with self.subTest(adress=adress):

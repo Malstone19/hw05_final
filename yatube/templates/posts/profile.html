@@ -39,7 +39,7 @@
 		{% thumbnail post.image "960x339" crop="center" upscale=True as im %}
 			<img class="card-img my-2" src="{{ im.url }}">
 		{% endthumbnail %}
-      <a href="{% url 'posts:post_detail' post.id %}">подробная информация </a>
+      <a href="{% url 'posts:post_detail' post.id post.author%}">подробная информация </a>
     </article>
       {% if post.group %}
       <a href="{% url 'posts:posts_list' post.group.slug %}">все записи группы</a>
