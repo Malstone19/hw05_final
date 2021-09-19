@@ -25,5 +25,5 @@ class StaticURLTests(TestCase):
         }
         for adress, template in context_of_templates.items():
             with self.subTest(adress=adress):
-                response = self.authorized_client.get(adress)
+                response = self.guest_client.get(adress)
                 self.assertTemplateUsed(response, template)
