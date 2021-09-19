@@ -21,7 +21,7 @@
           <div class="card-body">      
             <form method="post" enctype="multipart/form-data" action=
             {% if is_edit %}
-              "{% url 'posts:post_edit' post.id post.author %}"
+              "{% url 'posts:post_edit' post.id %}"
             {% else %}
               "{% url 'posts:post_create' %}"
             {% endif %} >

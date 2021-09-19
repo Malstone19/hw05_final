@@ -39,7 +39,7 @@
 	<img class="card-img my-2" src="{{ im.url }}">
 	{% endthumbnail %}
     {% if post.author == user %}
-		<a class="btn btn-primary" href="{% url 'posts:post_edit' post.id post.author %}">
+		<a class="btn btn-primary" href="{% url 'posts:post_edit' post.id %}">
         редактировать запись
     </a> 
     {% endif %}

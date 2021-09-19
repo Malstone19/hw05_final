@@ -104,13 +104,12 @@ class PostCreateFormTests(TestCase):
         }
         response = self.authorized_client.post(
             reverse('posts:post_edit',
-                    kwargs={'post_id': post.id, 'username': post.author}),
+                    kwargs={'post_id': post.id}),
             data=form_data,
             follow=True
         )
         self.assertRedirects(response, reverse('posts:post_detail',
-                             kwargs={'post_id': post.id,
-                                     'username': post.author}),)
+                             kwargs={'post_id': post.id}),)
         self.assertEqual(Post.objects.count(), post_count)
         latest_post = Post.objects.last()
         self.checkbox_for_edit_and_create(latest_post, form_data, image_name)
@@ -125,8 +124,7 @@ class PostCreateFormTests(TestCase):
             'text': 'блабла'
         }
         self.authorized_client.post(
-            reverse('posts:add_comment', kwargs={'post_id': post.id,
-                                                 'username': post.author}),
+            reverse('posts:add_comment', kwargs={'post_id': post.id}),
             data=form_data,
             follow=True
         )
@@ -146,8 +144,7 @@ class PostCreateFormTests(TestCase):
             'text': 'блабла'
         }
         self.guest_client.post(
-            reverse('posts:add_comment', kwargs={'post_id': post.id,
-                                                 'username': post.author}),
+            reverse('posts:add_comment', kwargs={'post_id': post.id}),
             data=form_data,
             follow=True
         )

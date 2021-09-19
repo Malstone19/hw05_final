@@ -37,9 +37,7 @@ class PostURLTests(TestCase):
         context = {
             reverse('posts:post_create'): HTTPStatus.OK,
             reverse('posts:post_edit',
-                    kwargs={'post_id': post.id,
-                            'username': post.author}):
-                                HTTPStatus.OK
+                    kwargs={'post_id': post.id}): HTTPStatus.OK
         }
         for url, status_code in context.items():
             with self.subTest(url=url):
@@ -56,13 +54,10 @@ class PostURLTests(TestCase):
                     args={PostURLTests.post.author}): HTTPStatus.OK,
             reverse('posts:post_create'): HTTPStatus.FOUND,
             reverse('posts:post_detail',
-                    kwargs={'post_id': PostURLTests.post.id,
-                            'username': PostURLTests.post.author}):
-                                HTTPStatus.OK,
+                    kwargs={'post_id': PostURLTests.post.id}): HTTPStatus.OK,
             reverse('posts:post_edit',
-                    kwargs={'post_id': PostURLTests.post.id,
-                            'username': PostURLTests.post.author}):
-                                HTTPStatus.FOUND,
+                    kwargs={'post_id': PostURLTests.post.id}):
+                        HTTPStatus.FOUND,
             '/unexisting_page/': HTTPStatus.NOT_FOUND,
         }
         for url, status_code in status_code_for_urls.items():
@@ -80,13 +75,11 @@ class PostURLTests(TestCase):
                     args={PostURLTests.post.author}): 'posts/profile.html',
             reverse('posts:post_create'): 'posts/create_post.html',
             reverse('posts:post_detail',
-                    kwargs={'post_id': PostURLTests.post.id, 'username':
-                            PostURLTests.post.author}):
-                                'posts/post_detail.html',
+                    kwargs={'post_id': PostURLTests.post.id}):
+                        'posts/post_detail.html',
             reverse('posts:post_edit',
-                    kwargs={'post_id': PostURLTests.post.id, 'username':
-                            PostURLTests.post.author}):
-                                'posts/create_post.html',
+                    kwargs={'post_id': PostURLTests.post.id}):
+                        'posts/create_post.html',
         }
         for adress, template in context_of_templates.items():
             with self.subTest(adress=adress):

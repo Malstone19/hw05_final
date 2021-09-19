@@ -75,12 +75,12 @@ class PostsViewsTests(TestCase):
             reverse('posts:posts_list',
                     kwargs={'slug': slug_test}): 'posts/group_list.html',
             reverse('posts:post_detail',
-                    kwargs={'post_id': id, 'username': author_test}):
+                    kwargs={'post_id': id}):
                         'posts/post_detail.html',
             reverse('posts:profile',
                     kwargs={'username': author_test}): 'posts/profile.html',
             reverse('posts:post_edit',
-                    kwargs={'post_id': id, 'username': author_test}):
+                    kwargs={'post_id': id}):
                         'posts/create_post.html',
             reverse('posts:post_create'): 'posts/create_post.html',
         }
@@ -143,11 +143,9 @@ class PostsViewsTests(TestCase):
 
     def test_post_detail(self):
         id = PostsViewsTests.post.id
-        username = PostsViewsTests.post.author
         comment_test = PostsViewsTests.comment
         response = (self.authorized_client.
-                    get(reverse('posts:post_detail', kwargs={'post_id': id,
-                        'username': username})))
+                    get(reverse('posts:post_detail', kwargs={'post_id': id})))
         first_object = response.context['post']
         self.defaul_post_tests(first_object)
         self.assertEqual(response.context['comments'][0], comment_test)
@@ -203,10 +201,9 @@ class PostsViewsTests(TestCase):
 
     def test_post_edit(self):
         id = PostsViewsTests.post.id
-        username = PostsViewsTests.post.author
         response = (self.authorized_client.
                     get(reverse('posts:post_edit',
-                        kwargs={'post_id': id, 'username': username})))
+                        kwargs={'post_id': id})))
         form_fields = {
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField,

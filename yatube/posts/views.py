@@ -52,7 +52,7 @@ def profile(request, username):
     return render(request, 'posts/profile.html', context)
 
 
-def post_detail(request, username, post_id):
+def post_detail(request, post_id):
     user_post = get_object_or_404(Post, id=post_id)
     form = CommentForm()
     comments = user_post.comments.all()
@@ -80,11 +80,8 @@ def post_create(request):
 
 
 @login_required
-def post_edit(request, username, post_id):
+def post_edit(request, post_id):
     post = get_object_or_404(Post, id=post_id)
-    if username != request.user.username:
-        return redirect('posts:post_detail', username=username,
-                        post_id=post)
     form = PostForm(
         request.POST or None,
         files=request.FILES or None,
@@ -92,8 +89,7 @@ def post_edit(request, username, post_id):
     )
     if form.is_valid():
         form.save()
-        return redirect('posts:post_detail', username=username,
-                        post_id=post.id)
+        return redirect('posts:post_detail', post_id=post.id)
     context = {
         'form': form,
         'is_edit': True,
@@ -103,7 +99,7 @@ def post_edit(request, username, post_id):
 
 
 @login_required
-def add_comment(request, username, post_id):
+def add_comment(request, post_id):
     post = post = get_object_or_404(Post, id=post_id)
     form = CommentForm(request.POST or None)
     if form.is_valid():
@@ -111,7 +107,7 @@ def add_comment(request, username, post_id):
         comment.author = request.user
         comment.post = post
         comment.save()
-    return redirect('posts:post_detail', username=username, post_id=post.id)
+    return redirect('posts:post_detail', post_id=post.id)
 
 
 @login_required
