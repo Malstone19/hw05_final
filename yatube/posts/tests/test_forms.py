@@ -35,11 +35,13 @@ class PostCreateFormTests(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
-    def checkbox_for_edit_and_create(self, latest_post, form_data, image_name):
+    def checkbox_for_edit_and_create(self, form_data, image_name):
+        latest_post = Post.objects.last()
         check_list = {
             latest_post.text: form_data['text'],
             latest_post.group.id: form_data['group'],
             latest_post.image: f'posts/{image_name}',
+            latest_post.author: PostCreateFormTests.user
         }
         for value, expected in check_list.items():
             with self.subTest(expected):
@@ -74,8 +76,7 @@ class PostCreateFormTests(TestCase):
         self.assertRedirects(response, reverse('posts:profile',
                              kwargs={'username': self.user.username}),)
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        latest_post = Post.objects.last()
-        self.checkbox_for_edit_and_create(latest_post, form_data, image_name)
+        self.checkbox_for_edit_and_create(form_data, image_name)
 
     def test_edit_post(self):
         post = Post.objects.create(
@@ -111,8 +112,7 @@ class PostCreateFormTests(TestCase):
         self.assertRedirects(response, reverse('posts:post_detail',
                              kwargs={'post_id': post.id}),)
         self.assertEqual(Post.objects.count(), post_count)
-        latest_post = Post.objects.last()
-        self.checkbox_for_edit_and_create(latest_post, form_data, image_name)
+        self.checkbox_for_edit_and_create(form_data, image_name)
 
     def test_authorized_user_comment(self):
         post = Post.objects.create(

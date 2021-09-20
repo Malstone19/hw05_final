@@ -172,14 +172,16 @@ class PostsViewsTests(TestCase):
             user=PostsViewsTests.author,
             author=PostsViewsTests.following_author
         )
-        post = Post.objects.create(
+        Post.objects.create(
             text='к',
             author=PostsViewsTests.following_author,
             group=PostsViewsTests.group,
         )
-        response = (self.not_followed_client.
-                    get(reverse('posts:follow_index')))
-        self.assertNotEqual(response.context, post)
+        response_auth = (self.authorized_client.
+                         get(reverse('posts:follow_index')))
+        response_not_auth = (self.not_followed_client.
+                             get(reverse('posts:follow_index')))
+        self.assertNotEqual(response_not_auth.content, response_auth.content)
 
     def test_group_list_context(self):
         slug_test = PostsViewsTests.group.slug
@@ -240,13 +242,6 @@ class PaginatorViewsTest(TestCase):
                 author=PaginatorViewsTest.author,
                 group=PaginatorViewsTest.group
             )
-        cls.templates_pages_names = {
-            'posts/index.html': reverse('posts:main_page'),
-            'posts/group_list.html': reverse('posts:posts_list',
-                                             kwargs={'slug': cls.group.slug}),
-            'posts/profile.html': reverse('posts:profile',
-                                          kwargs={'username': cls.post.author})
-        }
 
     def setUp(self):
         self.guest_client = Client()
@@ -254,14 +249,14 @@ class PaginatorViewsTest(TestCase):
         self.authorized_client.force_login(PaginatorViewsTest.author)
 
     def test_paginator(self):
-        list_of_urls = [reverse('posts:main_page'),
-                        reverse('posts:posts_list',
-                                kwargs={'slug':
-                                        PaginatorViewsTest.group.slug}),
-                        reverse('posts:profile',
-                                kwargs={'username':
-                                        PaginatorViewsTest.post.author})]
-        for url in list_of_urls:
+        urls = [reverse('posts:main_page'),
+                reverse('posts:posts_list',
+                        kwargs={'slug':
+                                PaginatorViewsTest.group.slug}),
+                reverse('posts:profile',
+                        kwargs={'username':
+                                PaginatorViewsTest.post.author})]
+        for url in urls:
             with self.subTest(url=url):
                 response_10 = self.client.get(url)
                 response_3 = self.client.get(url + '?page=2')
