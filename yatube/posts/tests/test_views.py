@@ -177,11 +177,8 @@ class PostsViewsTests(TestCase):
             author=PostsViewsTests.following_author,
             group=PostsViewsTests.group,
         )
-        response_auth = (self.authorized_client.
-                         get(reverse('posts:follow_index')))
-        response_not_auth = (self.not_followed_client.
-                             get(reverse('posts:follow_index')))
-        self.assertNotEqual(response_not_auth.content, response_auth.content)
+        response = self.not_followed_client.get(reverse('posts:follow_index'))
+        self.assertEqual(response.context.get('page'), None)
 
     def test_group_list_context(self):
         slug_test = PostsViewsTests.group.slug
