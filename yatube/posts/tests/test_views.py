@@ -134,13 +134,6 @@ class PostsViewsTests(TestCase):
         self.assertEqual(follow_first.author, PostsViewsTests.following_author)
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
-    def test_following_no(self):
-        follow_count = Follow.objects.all().count()
-        self.assertEqual(Follow.objects.count(), follow_count)
-        follow = Follow.objects.filter(user=PostsViewsTests.author,
-                                       author=PostsViewsTests.following_author)
-        self.assertEqual(follow.first(), None)
-
     def test_post_detail(self):
         id = PostsViewsTests.post.id
         comment_test = PostsViewsTests.comment
@@ -163,22 +156,6 @@ class PostsViewsTests(TestCase):
         response = (self.authorized_client.get(reverse('posts:follow_index')))
         first_object = response.context['page_obj'][0]
         self.assertEqual(first_object, post)
-
-    def test_follow_not_auth_index(self):
-        not_followed_user = User.objects.create_user(username='user')
-        self.not_followed_client = Client()
-        self.not_followed_client.force_login(not_followed_user)
-        Follow.objects.create(
-            user=PostsViewsTests.author,
-            author=PostsViewsTests.following_author
-        )
-        Post.objects.create(
-            text='к',
-            author=PostsViewsTests.following_author,
-            group=PostsViewsTests.group,
-        )
-        response = self.not_followed_client.get(reverse('posts:follow_index'))
-        self.assertEqual(response.context.get('page'), None)
 
     def test_group_list_context(self):
         slug_test = PostsViewsTests.group.slug
