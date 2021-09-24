@@ -157,6 +157,22 @@ class PostsViewsTests(TestCase):
         first_object = response.context['page_obj'][0]
         self.assertEqual(first_object, post)
 
+    def test_follow_not_auth_index(self):
+        not_followed_user = User.objects.create_user(username='user')
+        self.not_followed_client = Client()
+        self.not_followed_client.force_login(not_followed_user)
+        Follow.objects.create(
+            user=PostsViewsTests.author,
+            author=PostsViewsTests.following_author
+        )
+        Post.objects.create(
+            text='к',
+            author=PostsViewsTests.following_author,
+            group=PostsViewsTests.group,
+        )
+        response = self.not_followed_client.get(reverse('posts:follow_index'))
+        self.assertEqual(len(response.context['page_obj']), 0)
+
     def test_group_list_context(self):
         slug_test = PostsViewsTests.group.slug
         title_test = PostsViewsTests.group.title
