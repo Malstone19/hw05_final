@@ -173,6 +173,12 @@ class PostsViewsTests(TestCase):
         response = self.not_followed_client.get(reverse('posts:follow_index'))
         self.assertEqual(len(response.context['page_obj']), 0)
 
+    def test_post_correct_group(self):
+        response = self.authorized_client.get(reverse('posts:main_page'))
+        post = response.context['page_obj'][0]
+        group = post.group
+        self.assertEqual(group, self.group)
+
     def test_group_list_context(self):
         slug_test = PostsViewsTests.group.slug
         title_test = PostsViewsTests.group.title
