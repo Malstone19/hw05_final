@@ -174,10 +174,14 @@ class PostsViewsTests(TestCase):
         self.assertEqual(len(response.context['page_obj']), 0)
 
     def test_post_correct_group(self):
-        response = self.authorized_client.get(reverse('posts:main_page'))
-        post = response.context['page_obj'][0]
-        group = post.group
-        self.assertEqual(group, self.group)
+        clear_group = Group.objects.create(
+            title='Пустая группа',
+            slug='test-clear',
+            description='Описание тут',
+        )
+        response = (self.authorized_client.get(reverse('posts:posts_list',
+                    kwargs={'slug': clear_group.slug})))
+        self.assertEqual(len(response.context['page_obj']), 0)
 
     def test_group_list_context(self):
         slug_test = PostsViewsTests.group.slug
