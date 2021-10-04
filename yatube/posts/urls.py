@@ -26,4 +26,5 @@ urlpatterns = [
         views.profile_unfollow,
         name="profile_unfollow"
     ),
+    path('create/group', views.group_create, name='group_create'),
 ]

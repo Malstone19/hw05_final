@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import CommentForm, PostForm
+from .forms import CommentForm, GroupForm, PostForm
 from .models import Follow, Group, Post, User
 
 
@@ -77,6 +77,18 @@ def post_create(request):
         'is_edit': False
     }
     return render(request, 'posts/create_post.html', context)
+
+
+@login_required
+def group_create(request):
+    form = GroupForm(request.POST or None)
+    if form.is_valid():
+        form.save()
+        return redirect('posts:main_page')
+    context = {
+        'form': form,
+    }
+    return render(request, 'posts/create_group.html', context)
 
 
 @login_required

@@ -18,6 +18,10 @@
         </li>
         {% if user.is_authenticated %}
         <li class="nav-item"> 
+          <a class="nav-link {% if view_name  == 'posts:group_create' %}active{% endif %}" 
+          href="{% url 'posts:group_create' %}">Новая группа</a>
+        </li>
+        <li class="nav-item"> 
           <a class="nav-link {% if view_name  == 'posts:post_create' %}active{% endif %}" 
           href="{% url 'posts:post_create' %}">Новая запись</a>
         </li>
@@ -29,9 +33,9 @@
           <a class="nav-link link-light {% if view_name  == 'users:logout' %}active{% endif %}"
             href="{% url 'users:logout' %}">Выйти</a>
         </li>
-        <li>
+        <li class="nav-item">
           Пользователь: {{ user.username }}
-        <li>
+        </li>
         {% else %}
         <li class="nav-item"> 
           <a class="nav-link link-light {% if view_name  == 'users:login' %}active{% endif %}" 
