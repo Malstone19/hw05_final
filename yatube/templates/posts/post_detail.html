@@ -35,7 +35,7 @@
       <p>
         {{ post.text|linebreaksbr }}
       </p>
-	{% thumbnail post.image "1920x1080" crop="bottom" upscale=True as im %}
+	{% thumbnail post.image "1280x720" as im %}
 	<img class="card-img my-2" src="{{ im.url }}">
 	{% endthumbnail %}
     {% if post.author == user %}
